@@ -26,8 +26,6 @@ llm = ChatOpenAI(
     api_key=env("OPENAI_API_KEY"),
 )
 
-print(env("OPENAI_API_KEY"));
-
 embeddings = OpenAIEmbeddings(
     api_key=env("OPENAI_API_KEY"),
 )
