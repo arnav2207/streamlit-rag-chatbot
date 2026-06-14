@@ -67,7 +67,7 @@ def generate_chat_response(chat_id, prompt):
                     pdf_answer = "I could not find an answer in the uploaded PDF sources."
 
     collection_name = f"chat_{chat_id}"
-    if has_non_pdf_sources(chat_id) and os.path.exists(f"./persist/{collection_name}"):
+    if has_non_pdf_sources(chat_id) and os.path.exists("./persist"):
         retriever = load_retriever(collection_name=collection_name)
         rag_answer = generate_answer_from_context(retriever, prompt)
 
@@ -296,7 +296,7 @@ def chat_page(chat_id):
                     document = load_document(temp_file_path)
                     collection_name = f"chat_{chat_id}"
 
-                    if not os.path.exists(f"./persist/{collection_name}"):
+                    if not os.path.exists("./persist"):
                         create_collection(collection_name, document)
                     else:
                         vectordb = load_collection(collection_name)
