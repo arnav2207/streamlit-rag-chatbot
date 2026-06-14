@@ -1,12 +1,12 @@
 streamlit
 langchain
-langchain-openai
+langchain-google-genai
 langchain-chroma
 langchain-community
 langchain-text-splitters
 beautifulsoup4
 requests
 django-environ
-pypdf
 docx2txt
 unstructured
+structured-qa

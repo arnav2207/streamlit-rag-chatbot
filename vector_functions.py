@@ -1,15 +1,13 @@
 import os
 from langchain_chroma import Chroma
-from langchain_openai import OpenAIEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_core.documents import Document
 from langchain_text_splitters import CharacterTextSplitter
-from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_community.document_loaders import (
     TextLoader,
     CSVLoader,
-    PyPDFLoader,
     Docx2txtLoader,
     UnstructuredHTMLLoader,
     UnstructuredMarkdownLoader,
@@ -21,13 +19,14 @@ env = environ.Env()
 # reading .env file
 environ.Env.read_env()
 
-llm = ChatOpenAI(
-    model="gpt-4o-mini",
-    api_key=env("OPENAI_API_KEY"),
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
+    google_api_key=env("GOOGLE_API_KEY"),
 )
 
-embeddings = OpenAIEmbeddings(
-    api_key=env("OPENAI_API_KEY"),
+embeddings = GoogleGenerativeAIEmbeddings(
+    model="models/gemini-embedding-001",
+    google_api_key=env("GOOGLE_API_KEY"),
 )
 
 text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
@@ -35,7 +34,8 @@ text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
 def load_document(file_path: str) -> list[Document]:
     """
     Load a document from a file path.
-    Supports .txt, .pdf, .docx, .csv, .html, and .md files.
+    Supports .txt, .docx, .csv, .html, and .md files.
+    PDFs are handled separately via structured_functions.py.
 
     Args:
     file_path (str): Path to the document file.
@@ -50,8 +50,6 @@ def load_document(file_path: str) -> list[Document]:
 
     if file_extension == ".txt":
         loader = TextLoader(file_path)
-    elif file_extension == ".pdf":
-        loader = PyPDFLoader(file_path)
     elif file_extension == ".docx":
         loader = Docx2txtLoader(file_path)
     elif file_extension == ".csv":

@@ -23,6 +23,61 @@ from vector_functions import (
     add_documents_to_collection,
     load_collection,
 )
+from structured_functions import (
+    is_pdf_source,
+    process_pdf_to_sections,
+    remove_pdf_sections,
+    get_pdf_sections_dirs,
+    answer_from_pdf_sections,
+    is_llama_model_configured,
+    is_llama_model_loaded,
+    get_llama_model_error,
+)
+
+
+def get_pdf_source_names(chat_id):
+    documents = list_sources(chat_id, source_type="document")
+    return [doc[1] for doc in documents if is_pdf_source(doc[1])]
+
+
+def has_non_pdf_sources(chat_id):
+    documents = list_sources(chat_id, source_type="document")
+    links = list_sources(chat_id, source_type="link")
+    non_pdf_docs = [doc for doc in documents if not is_pdf_source(doc[1])]
+    return bool(non_pdf_docs or links)
+
+
+def generate_chat_response(chat_id, prompt):
+    pdf_dirs = get_pdf_sections_dirs(chat_id, get_pdf_source_names(chat_id))
+    pdf_answer = None
+    rag_answer = None
+
+    if pdf_dirs:
+        if not is_llama_model_configured():
+            pdf_answer = (
+                "PDF sources are indexed locally, but LLAMA_MODEL_PATH is not configured."
+            )
+        else:
+            pdf_answer = answer_from_pdf_sections(prompt, pdf_dirs)
+            if pdf_answer is None:
+                model_error = get_llama_model_error()
+                if model_error:
+                    pdf_answer = f"Could not load llama.cpp model: {model_error}"
+                else:
+                    pdf_answer = "I could not find an answer in the uploaded PDF sources."
+
+    collection_name = f"chat_{chat_id}"
+    if has_non_pdf_sources(chat_id) and os.path.exists(f"./persist/{collection_name}"):
+        retriever = load_retriever(collection_name=collection_name)
+        rag_answer = generate_answer_from_context(retriever, prompt)
+
+    if pdf_answer and rag_answer:
+        return f"From PDF sources:\n{pdf_answer}\n\nFrom other sources:\n{rag_answer}"
+    if pdf_answer:
+        return pdf_answer
+    if rag_answer:
+        return rag_answer
+    return "I need some context to answer that question."
 
 def chats_home():
     st.markdown(
@@ -160,19 +215,8 @@ def chat_page(chat_id):
             st.markdown(prompt)
 
         # Get AI response
-        # Load retriever for the chat context
-        collection_name = f"chat_{chat_id}"
-        if os.path.exists(f"./persist"):
-            retriever = load_retriever(collection_name=collection_name)
-        else:
-            retriever = None
-
-        # Ask question using the retriever
-        response = (
-            generate_answer_from_context(retriever, prompt)
-            if retriever
-            else "I need some context to answer that question."
-        )
+        with st.spinner("Generating answer..."):
+            response = generate_chat_response(chat_id, prompt)
 
         # Save AI response
         create_message(chat_id, "ai", response)
@@ -193,6 +237,22 @@ def chat_page(chat_id):
         # Chat name
         st.subheader(f"{chat[1]}")
 
+        pdf_sources = get_pdf_source_names(chat_id)
+        if pdf_sources:
+            st.caption("PDF sources use local structured sections (llama.cpp).")
+        if has_non_pdf_sources(chat_id):
+            st.caption("Other sources use Chroma RAG (Gemini).")
+        if is_llama_model_loaded():
+            st.caption("llama.cpp model: loaded")
+        elif is_llama_model_configured():
+            model_error = get_llama_model_error()
+            if model_error:
+                st.caption(f"llama.cpp model error: {model_error}")
+            else:
+                st.caption("llama.cpp model: loads on first PDF question")
+        else:
+            st.caption("llama.cpp model: not configured")
+
         # Documents Section
         st.subheader("📑 Documents")
 
@@ -209,6 +269,8 @@ def chat_page(chat_id):
                     st.write(doc_name)
                 with col2:
                     if st.button("❌", key=f"delete_doc_{doc_id}"):
+                        if is_pdf_source(doc_name):
+                            remove_pdf_sections(chat_id, doc_name)
                         delete_source(doc_id)
                         st.success(f"Deleted document: {doc_name}")
                         st.rerun()
@@ -228,17 +290,17 @@ def chat_page(chat_id):
                 with open(temp_file_path, "wb") as f:
                     f.write(uploaded_file.getbuffer())
 
-                # Load document
-                document = load_document(temp_file_path)
-                
-                # Create or update collection for this chat
-                collection_name = f"chat_{chat_id}"
-
-                if not os.path.exists(f"./persist/{collection_name}"):
-                    vectordb = create_collection(collection_name, document)
+                if is_pdf_source(uploaded_file.name):
+                    process_pdf_to_sections(temp_file_path, chat_id, uploaded_file.name)
                 else:
-                    vectordb = load_collection(collection_name)
-                    vectordb = add_documents_to_collection(vectordb, document)
+                    document = load_document(temp_file_path)
+                    collection_name = f"chat_{chat_id}"
+
+                    if not os.path.exists(f"./persist/{collection_name}"):
+                        create_collection(collection_name, document)
+                    else:
+                        vectordb = load_collection(collection_name)
+                        add_documents_to_collection(vectordb, document)
 
                 # Save source to database
                 create_source(uploaded_file.name, "", chat_id, source_type="document")
