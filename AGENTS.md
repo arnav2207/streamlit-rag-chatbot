@@ -5,8 +5,7 @@ Single-module Streamlit app. No packages, no tests, no linter/formatter/typechec
 ## Quickstart
 
 ```bash
-# No requirements.txt — install manually
-pip install streamlit langchain langchain-openai langchain-chroma langchain-community beautifulsoup4 requests django-environ
+pip install -r requirements.txt
 
 # One-time DB init
 python create_relational_db.py
@@ -17,8 +16,11 @@ streamlit run chats.py
 
 ## Environment
 
-- Uses `django-environ` (not `python-dotenv`). Requires `.env` with `OPENAI_API_KEY`.
-- **No `.gitignore` exists**. `.env` with real secrets is tracked — do not commit secrets.
+- Uses `django-environ` (not `python-dotenv`).
+- Requires `.env` with:
+  - `GOOGLE_API_KEY` — Gemini RAG for links and non-PDF files
+  - `LLAMA_MODEL_PATH` — local GGUF model for PDF Q&A
+- Do not commit `.env` or real secrets.
 
 ## Key structure
 
@@ -26,16 +28,20 @@ streamlit run chats.py
 |---|---|
 | `chats.py` | Entrypoint — Streamlit UI and routing |
 | `db.py` | SQLite CRUD (`doc_sage.sqlite`) |
-| `vector_functions.py` | ChromaDB + LangChain RAG pipeline |
+| `vector_functions.py` | ChromaDB + Gemini RAG for non-PDF sources |
+| `structured_functions.py` | PDF section extraction + llama.cpp Q&A (Mozilla structured-qa) |
 | `create_relational_db.py` | Schema definition (run once) |
+| `sections/` | PDF section files (`chat_{chat_id}/{doc_name}/`) |
 | `persist/` | ChromaDB vector store (collections: `chat_{chat_id}`) |
 | `temp_files/` | Temp uploads (cleaned after processing) |
 
 ## Gotchas
 
-- **API key leak**: `vector_functions.py:29` prints `OPENAI_API_KEY` to stdout on import. Remove or guard before committing.
+- PDFs use structured-qa (PyMuPDF4LLM + llama.cpp), not Chroma.
+- Links and non-PDF files use Chroma + Gemini (`gemini-2.5-flash`, `gemini-embedding-001`).
 - Chat collection names follow the pattern `chat_{chat_id}` in ChromaDB's `./persist/`.
-- Document types supported: `.txt`, `.pdf`, `.docx`, `.csv`, `.html`, `.md`.
+- Document types: `.pdf` (structured), `.txt`, `.docx`, `.csv`, `.html`, `.md` (Chroma).
 - Text splitting: `CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)`.
 - Retriever: `similarity_score_threshold` at 0.6.
-- Uses `gpt-4o-mini`.
+- llama.cpp model is cached in `st.session_state` after first PDF question.
+- Old OpenAI Chroma embeddings are incompatible — wipe `./persist/` after migration.
