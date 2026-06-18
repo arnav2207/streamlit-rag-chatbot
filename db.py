@@ -1,8 +1,10 @@
 import sqlite3
 
+
 # Connect to SQLite database
 def connect_db():
     return sqlite3.connect("doc_sage.sqlite")
+
 
 # CRUD Operations for 'chat' table
 def create_chat(title):
@@ -70,6 +72,7 @@ def read_source(source_id):
     result = cursor.fetchone()
     conn.close()
     return result
+
 
 def update_source(source_id, new_name, new_source_text):
     conn = connect_db()

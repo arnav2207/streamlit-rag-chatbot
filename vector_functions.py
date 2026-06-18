@@ -14,6 +14,7 @@ from langchain_community.document_loaders import (
 )
 
 import environ
+
 env = environ.Env()
 
 # reading .env file
@@ -30,6 +31,7 @@ embeddings = GoogleGenerativeAIEmbeddings(
 )
 
 text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+
 
 def load_document(file_path: str) -> list[Document]:
     """
@@ -62,6 +64,7 @@ def load_document(file_path: str) -> list[Document]:
         raise ValueError(f"Unsupported file type: {file_extension}")
 
     return loader.load()
+
 
 def create_collection(collection_name, documents):
     """
@@ -109,7 +112,7 @@ def load_collection(collection_name):
     This function loads a previously created Chroma collection from disk.
     """
     persist_directory = "./persist"
-    
+
     # Load the Chroma collection from the specified directory
     vectordb = Chroma(
         persist_directory=persist_directory,
@@ -118,7 +121,6 @@ def load_collection(collection_name):
     )
 
     return vectordb
-
 
 
 def add_documents_to_collection(vectordb, documents):
@@ -139,6 +141,7 @@ def add_documents_to_collection(vectordb, documents):
     vectordb.add_documents(texts)
 
     return vectordb
+
 
 def load_retriever(collection_name, score_threshold: float = 0.6):
     """
@@ -166,6 +169,7 @@ def load_retriever(collection_name, score_threshold: float = 0.6):
         search_kwargs={"score_threshold": score_threshold},
     )
     return retriever
+
 
 def generate_answer_from_context(retriever, question: str):
     """

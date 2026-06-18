@@ -1,5 +1,7 @@
 import streamlit as st
-import os, time, math
+import os
+import time
+import math
 import requests
 from bs4 import BeautifulSoup
 from langchain_core.documents import Document
@@ -54,9 +56,7 @@ def generate_chat_response(chat_id, prompt):
 
     if pdf_dirs:
         if not is_llama_model_configured():
-            pdf_answer = (
-                "PDF sources are indexed locally, but LLAMA_MODEL_PATH is not configured."
-            )
+            pdf_answer = "PDF sources are indexed locally, but LLAMA_MODEL_PATH is not configured."
         else:
             pdf_answer = answer_from_pdf_sections(prompt, pdf_dirs)
             if pdf_answer is None:
@@ -64,7 +64,9 @@ def generate_chat_response(chat_id, prompt):
                 if model_error:
                     pdf_answer = f"Could not load llama.cpp model: {model_error}"
                 else:
-                    pdf_answer = "I could not find an answer in the uploaded PDF sources."
+                    pdf_answer = (
+                        "I could not find an answer in the uploaded PDF sources."
+                    )
 
     collection_name = f"chat_{chat_id}"
     if has_non_pdf_sources(chat_id) and os.path.exists("./persist"):
@@ -78,6 +80,7 @@ def generate_chat_response(chat_id, prompt):
     if rag_answer:
         return rag_answer
     return "I need some context to answer that question."
+
 
 def chats_home():
     st.markdown(
@@ -140,7 +143,6 @@ def chats_home():
                         st.success(f"Deleted chat: {chat_title}")
                         st.rerun()
 
-
         # Pagination controls
         col1, col2, col3 = st.columns([1, 2, 1])
 
@@ -172,6 +174,7 @@ def stream_response(response):
         # Yield the word with a space and pause briefly
         yield word + " "
         time.sleep(0.05)
+
 
 def chat_page(chat_id):
     """
@@ -220,7 +223,7 @@ def chat_page(chat_id):
 
         # Save AI response
         create_message(chat_id, "ai", response)
-    
+
         # Display AI response
         with st.chat_message("assistant"):
             st.write_stream(stream_response(response))
@@ -233,7 +236,7 @@ def chat_page(chat_id):
         if st.button("Back to Chats"):
             st.query_params.clear()
             st.rerun()
-            
+
         # Chat name
         st.subheader(f"{chat[1]}")
 
@@ -280,13 +283,12 @@ def chat_page(chat_id):
         uploaded_file = st.file_uploader("Upload Document", key="file_uploader")
 
         if uploaded_file:
-
             # Save document content to database
             with st.spinner("Processing document..."):
                 temp_dir = "temp_files"
                 os.makedirs(temp_dir, exist_ok=True)
                 temp_file_path = os.path.join(temp_dir, uploaded_file.name)
-                
+
                 with open(temp_file_path, "wb") as f:
                     f.write(uploaded_file.getbuffer())
 
@@ -340,7 +342,6 @@ def chat_page(chat_id):
                     # Fetch content from the link
                     try:
                         headers = {
-
                             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36"
                         }
                         response = requests.get(new_link, headers=headers)
@@ -364,14 +365,12 @@ def chat_page(chat_id):
                         ]
 
                         collection_name = f"chat_{chat_id}"
-                        
-                        if not os.path.exists(f"./persist"):
+
+                        if not os.path.exists("./persist"):
                             create_collection(collection_name, documents)
                         else:
                             vectordb = load_collection(collection_name)
                             add_documents_to_collection(vectordb, documents)
-
-
 
                         # Save link to database
                         create_source(new_link, "", chat_id, source_type="link")
@@ -380,7 +379,6 @@ def chat_page(chat_id):
                         st.rerun()
                     except Exception as e:
                         st.toast(
-
                             f"Failed to fetch content from the link: {e}", icon="⚠️"
                         )
             else:
@@ -404,6 +402,7 @@ def main():
         chat_page(chat_id)
     else:
         chats_home()
+
 
 if __name__ == "__main__":
     main()
