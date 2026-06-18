@@ -12,7 +12,7 @@ from langchain_community.document_loaders import (
     UnstructuredHTMLLoader,
     UnstructuredMarkdownLoader,
 )
-
+from typing import Any
 import environ
 
 env = environ.Env()
@@ -27,7 +27,7 @@ llm = ChatGoogleGenerativeAI(
 
 embeddings = GoogleGenerativeAIEmbeddings(
     model="models/gemini-embedding-001",
-    google_api_key=env("GOOGLE_API_KEY"),
+    google_api_key=env("GOOGLE_API_KEY"),  # type: ignore[call-arg]
 )
 
 text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
@@ -50,6 +50,7 @@ def load_document(file_path: str) -> list[Document]:
     """
     _, file_extension = os.path.splitext(file_path)
 
+    loader: Any
     if file_extension == ".txt":
         loader = TextLoader(file_path)
     elif file_extension == ".docx":

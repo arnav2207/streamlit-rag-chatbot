@@ -13,4 +13,11 @@ repos:
         stages: [pre-commit]
         language: system
         types: [python]
+      - id: mypy
+        name: mypy checks
+        entry: mypy .
+        stages: [pre-commit]
+        language: system
+        types: [python]
+        pass_filenames: false
 
