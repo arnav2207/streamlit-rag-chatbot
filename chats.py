@@ -283,35 +283,38 @@ def chat_page(chat_id):
         uploaded_file = st.file_uploader("Upload Document", key="file_uploader")
 
         if uploaded_file:
-            # Save document content to database
-            with st.spinner("Processing document..."):
-                temp_dir = "temp_files"
-                os.makedirs(temp_dir, exist_ok=True)
-                temp_file_path = os.path.join(temp_dir, uploaded_file.name)
+            temp_dir = "temp_files"
+            os.makedirs(temp_dir, exist_ok=True)
+            temp_file_path = os.path.join(temp_dir, uploaded_file.name)
 
-                with open(temp_file_path, "wb") as f:
-                    f.write(uploaded_file.getbuffer())
+            with open(temp_file_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
 
+            try:
                 if is_pdf_source(uploaded_file.name):
-                    process_pdf_to_sections(temp_file_path, chat_id, uploaded_file.name)
+                    with st.spinner("Processing PDF (OCR if needed)..."):
+                        process_pdf_to_sections(
+                            temp_file_path, chat_id, uploaded_file.name
+                        )
                 else:
-                    document = load_document(temp_file_path)
-                    collection_name = f"chat_{chat_id}"
+                    with st.spinner("Processing document..."):
+                        document = load_document(temp_file_path)
+                        collection_name = f"chat_{chat_id}"
 
-                    if not os.path.exists("./persist"):
-                        create_collection(collection_name, document)
-                    else:
-                        vectordb = load_collection(collection_name)
-                        add_documents_to_collection(vectordb, document)
+                        if not os.path.exists("./persist"):
+                            create_collection(collection_name, document)
+                        else:
+                            vectordb = load_collection(collection_name)
+                            add_documents_to_collection(vectordb, document)
 
-                # Save source to database
                 create_source(uploaded_file.name, "", chat_id, source_type="document")
-
-                # Remove temp file
                 os.remove(temp_file_path)
                 del st.session_state["file_uploader"]
-
                 st.rerun()
+            except RuntimeError as e:
+                if os.path.exists(temp_file_path):
+                    os.remove(temp_file_path)
+                st.error(str(e))
 
         st.subheader("🔗 Links")
 

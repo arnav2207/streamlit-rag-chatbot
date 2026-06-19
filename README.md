@@ -8,7 +8,7 @@ DocSage is a Streamlit document Q&A app for creating chat sessions, adding docum
 - Upload source documents for a specific chat.
 - Add web links and index their page text.
 - Store chats, messages, and source metadata in SQLite.
-- **PDFs**: local structured Q&A via PyMuPDF4LLM section extraction and llama.cpp (Mozilla structured-qa blueprint).
+- **PDFs**: local structured Q&A via OCR (for scanned pages), PyMuPDF4LLM section extraction, and llama.cpp (Mozilla structured-qa blueprint).
 - **Other sources**: per-chat Chroma embeddings with Gemini RAG for links and non-PDF files.
 - Stream assistant responses with a simple typing effect.
 
@@ -18,6 +18,14 @@ DocSage is a Streamlit document Q&A app for creating chat sessions, adding docum
 - A Google Gemini API key (for links and non-PDF document RAG).
 - A local GGUF model file for llama.cpp PDF Q&A (recommended: Qwen2.5-3B-Instruct).
 - ~10 GB RAM recommended for local PDF Q&A.
+- Tesseract OCR (required for scanned/image PDFs):
+  ```bash
+  # macOS
+  brew install tesseract
+
+  # Ubuntu/Debian
+  sudo apt install tesseract-ocr
+  ```
 - `pip` for installing Python packages.
 
 ## Installation
@@ -37,7 +45,7 @@ CMAKE_ARGS="-DGGML_METAL=on" pip install llama-cpp-python
 If you do not have `requirements.txt`, install the dependencies manually:
 
 ```bash
-pip install streamlit langchain langchain-google-genai langchain-chroma langchain-community langchain-text-splitters beautifulsoup4 requests django-environ docx2txt unstructured structured-qa
+pip install streamlit langchain langchain-google-genai langchain-chroma langchain-community langchain-text-splitters beautifulsoup4 requests django-environ docx2txt unstructured structured-qa ocrmypdf
 ```
 
 ## Configuration
@@ -90,7 +98,7 @@ Then use the browser interface to:
 
 Document uploads support:
 
-- `.pdf` — structured section workflow (local llama.cpp, no Chroma)
+- `.pdf` — OCR for image-only pages (via `ocrmypdf`), then structured section workflow (local llama.cpp, no Chroma)
 - `.txt`, `.docx`, `.csv`, `.html`, `.md` — Chroma RAG with Gemini
 
 Web links are fetched with `requests`, parsed with BeautifulSoup, and indexed in Chroma with Gemini embeddings.
@@ -114,6 +122,7 @@ Web links are fetched with `requests`, parsed with BeautifulSoup, and indexed in
 
 ### PDF sources (local-first)
 
+- OCR: `ocrmypdf` with `skip_text` — text PDFs are unchanged; image-only pages are OCR'd locally via Tesseract
 - Preprocessing: `structured-qa` / PyMuPDF4LLM converts PDFs to markdown sections
 - Storage: `./sections/chat_{chat_id}/{doc_name}/`
 - Q&A: Mozilla find/retrieve/answer loop via llama.cpp

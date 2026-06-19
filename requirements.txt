@@ -10,3 +10,4 @@ django-environ
 docx2txt
 unstructured
 structured-qa
+ocrmypdf

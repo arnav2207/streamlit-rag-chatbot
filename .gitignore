@@ -5,3 +5,4 @@ doc_sage.sqlite
 persist/
 temp_files/
 sections/
+debug.md

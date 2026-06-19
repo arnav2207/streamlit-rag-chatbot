@@ -2,7 +2,9 @@ import os
 import shutil
 
 import environ
+import ocrmypdf
 import streamlit as st
+from ocrmypdf.exceptions import MissingDependencyError
 from structured_qa.config import ANSWER_PROMPT, FIND_PROMPT
 from structured_qa.model_loaders import load_llama_cpp_model
 from structured_qa.preprocessing import document_to_sections_dir
@@ -12,6 +14,12 @@ env = environ.Env()
 environ.Env.read_env()
 
 SECTIONS_ROOT = "./sections"
+TEMP_DIR = "temp_files"
+TESSERACT_INSTALL_MSG = (
+    "Tesseract OCR is required for scanned/image PDFs. Install it with:\n"
+    "  macOS:   brew install tesseract\n"
+    "  Ubuntu:  sudo apt install tesseract-ocr"
+)
 
 
 def get_sections_dir(chat_id, doc_name: str) -> str:
@@ -22,10 +30,57 @@ def is_pdf_source(doc_name: str) -> bool:
     return doc_name.lower().endswith(".pdf")
 
 
+def pdf_needs_ocr(file_path: str, min_chars: int = 20) -> bool:
+    """Return True when a PDF has little or no embedded text (likely scanned)."""
+    import fitz
+
+    doc = fitz.open(file_path)
+    text = "".join(page.get_text() for page in doc)
+    doc.close()
+    return len(text.strip()) < min_chars
+
+
+def prepare_pdf_with_ocr(file_path: str) -> tuple[str, str | None]:
+    """
+    OCR image-only PDF pages so pymupdf4llm can extract text.
+
+    Skips OCR when the PDF already has extractable text.
+    Returns (path_for_extraction, ocr_temp_path_to_cleanup).
+    """
+    if not pdf_needs_ocr(file_path):
+        return file_path, None
+
+    os.makedirs(TEMP_DIR, exist_ok=True)
+    basename = os.path.basename(file_path)
+    ocr_path = os.path.join(TEMP_DIR, f"{basename}.ocr.pdf")
+
+    try:
+        ocrmypdf.ocr(
+            file_path,
+            ocr_path,
+            skip_text=True,
+            progress_bar=False,
+        )
+        return ocr_path, ocr_path
+    except MissingDependencyError as e:
+        raise RuntimeError(f"{TESSERACT_INSTALL_MSG}\n\nDetails: {e}") from e
+    except Exception as e:
+        print(f"OCR skipped, using original PDF: {e}")
+        if os.path.exists(ocr_path):
+            os.remove(ocr_path)
+        return file_path, None
+
+
 def process_pdf_to_sections(file_path: str, chat_id, doc_name: str) -> list[str]:
     sections_dir = get_sections_dir(chat_id, doc_name)
     os.makedirs(os.path.dirname(sections_dir), exist_ok=True)
-    return document_to_sections_dir(file_path, sections_dir)
+
+    pdf_for_extraction, ocr_temp_path = prepare_pdf_with_ocr(file_path)
+    try:
+        return document_to_sections_dir(pdf_for_extraction, sections_dir)
+    finally:
+        if ocr_temp_path and os.path.exists(ocr_temp_path):
+            os.remove(ocr_temp_path)
 
 
 def remove_pdf_sections(chat_id, doc_name: str) -> None:
