@@ -27,3 +27,10 @@ repos:
         pass_filenames: false
         always_run: true
         stages: [pre-commit]
+      - id: pyrefly
+        name: pyrefly checks
+        entry: pyrefly check
+        stages: [pre-commit]
+        language: system
+        types: [python]
+        pass_filenames: false
