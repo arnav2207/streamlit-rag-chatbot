@@ -1,9 +1,51 @@
+import os
 import sqlite3
 
+DEFAULT_DB_PATH = "doc_sage.sqlite"
 
-# Connect to SQLite database
+
 def connect_db():
-    return sqlite3.connect("doc_sage.sqlite")
+    db_path = os.environ.get("DOC_SAGE_DB_PATH", DEFAULT_DB_PATH)
+    return sqlite3.connect(db_path)
+
+
+def init_schema(conn):
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS chat (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sources (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            source_text TEXT,
+            type TEXT DEFAULT "document",
+            chat_id INTEGER,
+            FOREIGN KEY (chat_id) REFERENCES chat(id)
+        )
+    """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            chat_id INTEGER NOT NULL,
+            sender TEXT NOT NULL,
+            content TEXT NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(chat_id) REFERENCES chat(id)
+        );
+    """
+    )
+    conn.commit()
 
 
 # CRUD Operations for 'chat' table

@@ -1,6 +1,6 @@
 # DocSage — RAG Chatbot
 
-Single-module Streamlit app. No packages, no tests, no linter/formatter/typechecker.
+Single-module Streamlit app. Starter pytest unit tests in `tests/`.
 
 ## Quickstart
 
@@ -13,6 +13,15 @@ python create_relational_db.py
 # Launch
 streamlit run chats.py
 ```
+
+## Testing
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+Tests use a temporary SQLite file via `DOC_SAGE_DB_PATH` — no `.env`, API keys, or GGUF model needed for unit tests. Pre-commit also runs pytest when dev deps are installed.
 
 ## Environment
 
@@ -31,6 +40,9 @@ streamlit run chats.py
 | `vector_functions.py` | ChromaDB + Gemini RAG for non-PDF sources |
 | `structured_functions.py` | PDF section extraction + llama.cpp Q&A (Mozilla structured-qa) |
 | `create_relational_db.py` | Schema definition (run once) |
+| `tests/` | Pytest unit tests |
+| `pytest.ini` | Pytest configuration |
+| `requirements-dev.txt` | Dev dependencies (pytest) |
 | `sections/` | PDF section files (`chat_{chat_id}/{doc_name}/`) |
 | `persist/` | ChromaDB vector store (collections: `chat_{chat_id}`) |
 | `temp_files/` | Temp uploads (cleaned after processing) |

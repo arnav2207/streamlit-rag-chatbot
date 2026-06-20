@@ -149,7 +149,14 @@ If you previously indexed sources with OpenAI embeddings, delete `./persist/` an
 ## Development Notes
 
 - This is a small Streamlit app, not a packaged Python library.
-- There is no test suite, linter, formatter, or typechecker configured.
+- Run the test suite with pytest (no API keys or local model required for unit tests):
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+- Pre-commit runs ruff, mypy, and pytest when dev dependencies are installed (`pre-commit run --all-files`).
 - Use a quick syntax check after Python edits:
 
 ```bash
