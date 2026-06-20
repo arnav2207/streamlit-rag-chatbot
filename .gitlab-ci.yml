@@ -1,0 +1,40 @@
+image: python:3.12-slim
+
+stages:
+  - lint
+  - format
+  - type_check
+  - test
+  - coverage
+
+variables:
+  DOC_SAGE_DB_PATH: /tmp/doc_sage_test.sqlite
+
+before_script:
+  - pip install --upgrade pip
+  - pip install -r requirements.txt -r requirements-dev.txt
+
+ruff-lint:
+  stage: lint
+  script:
+    - ruff check .
+
+ruff-format:
+  stage: format
+  script:
+    - ruff format --check .
+
+mypy:
+  stage: type_check
+  script:
+    - mypy .
+
+pytest:
+  stage: test
+  script:
+    - pytest
+
+coverage:
+  stage: coverage
+  script:
+    - pytest --cov=. --cov-report=term-missing

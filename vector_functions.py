@@ -1,19 +1,20 @@
 import os
+from typing import Any
+
+import environ
 from langchain_chroma import Chroma
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
-from langchain_core.documents import Document
-from langchain_text_splitters import CharacterTextSplitter
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnablePassthrough
 from langchain_community.document_loaders import (
-    TextLoader,
     CSVLoader,
     Docx2txtLoader,
+    TextLoader,
     UnstructuredHTMLLoader,
     UnstructuredMarkdownLoader,
 )
-from typing import Any
-import environ
+from langchain_core.documents import Document
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_text_splitters import CharacterTextSplitter
 
 env = environ.Env()
 

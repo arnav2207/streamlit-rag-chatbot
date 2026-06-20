@@ -1,12 +1,12 @@
 from unittest.mock import patch
 
-from db import create_source
 from chats import (
     generate_chat_response,
     get_pdf_source_names,
     has_non_pdf_sources,
     stream_response,
 )
+from db import create_source
 
 
 def test_get_pdf_source_names(chat_id):

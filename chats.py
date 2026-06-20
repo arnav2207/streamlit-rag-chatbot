@@ -1,39 +1,40 @@
-import streamlit as st
+import math
 import os
 import time
-import math
+
 import requests
+import streamlit as st
 from bs4 import BeautifulSoup
 from langchain_core.documents import Document
-from db import (
-    read_chat,
-    create_chat,
-    list_chats,
-    delete_chat,
-    create_message,
-    get_messages,
-    create_source,
-    list_sources,
-    delete_source,
-)
 
-from vector_functions import (
-    load_document,
-    create_collection,
-    load_retriever,
-    generate_answer_from_context,
-    add_documents_to_collection,
-    load_collection,
+from db import (
+    create_chat,
+    create_message,
+    create_source,
+    delete_chat,
+    delete_source,
+    get_messages,
+    list_chats,
+    list_sources,
+    read_chat,
 )
 from structured_functions import (
+    answer_from_pdf_sections,
+    get_llama_model_error,
+    get_pdf_sections_dirs,
+    is_llama_model_configured,
+    is_llama_model_loaded,
     is_pdf_source,
     process_pdf_to_sections,
     remove_pdf_sections,
-    get_pdf_sections_dirs,
-    answer_from_pdf_sections,
-    is_llama_model_configured,
-    is_llama_model_loaded,
-    get_llama_model_error,
+)
+from vector_functions import (
+    add_documents_to_collection,
+    create_collection,
+    generate_answer_from_context,
+    load_collection,
+    load_document,
+    load_retriever,
 )
 
 
@@ -64,9 +65,7 @@ def generate_chat_response(chat_id, prompt):
                 if model_error:
                     pdf_answer = f"Could not load llama.cpp model: {model_error}"
                 else:
-                    pdf_answer = (
-                        "I could not find an answer in the uploaded PDF sources."
-                    )
+                    pdf_answer = "I could not find an answer in the uploaded PDF sources."
 
     collection_name = f"chat_{chat_id}"
     if has_non_pdf_sources(chat_id) and os.path.exists("./persist"):
@@ -83,9 +82,7 @@ def generate_chat_response(chat_id, prompt):
 
 
 def chats_home():
-    st.markdown(
-        "<h1 style='text-align: center;'>DocSage🧙‍♂️</h1>", unsafe_allow_html=True
-    )
+    st.markdown("<h1 style='text-align: center;'>DocSage🧙‍♂️</h1>", unsafe_allow_html=True)
 
     with st.container(border=True):
         col1, col2 = st.columns([0.8, 0.2])
@@ -293,9 +290,7 @@ def chat_page(chat_id):
             try:
                 if is_pdf_source(uploaded_file.name):
                     with st.spinner("Processing PDF (OCR if needed)..."):
-                        process_pdf_to_sections(
-                            temp_file_path, chat_id, uploaded_file.name
-                        )
+                        process_pdf_to_sections(temp_file_path, chat_id, uploaded_file.name)
                 else:
                     with st.spinner("Processing document..."):
                         document = load_document(temp_file_path)
@@ -345,7 +340,11 @@ def chat_page(chat_id):
                     # Fetch content from the link
                     try:
                         headers = {
-                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36"
+                            "User-Agent": (
+                                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                                "Chrome/86.0.4240.111 Safari/537.36"
+                            )
                         }
                         response = requests.get(new_link, headers=headers)
                         soup = BeautifulSoup(response.text, "html.parser")
@@ -355,16 +354,15 @@ def chat_page(chat_id):
                             link_content = soup.get_text(separator="\n")
                         else:
                             st.toast(
-                                "Unable to retrieve content from the link. It may be empty or inaccessible.",
+                                "Unable to retrieve content from the link. "
+                                "It may be empty or inaccessible.",
                                 icon="🚨",
                             )
                             return
 
                         # Save link content to vector store
                         documents = [
-                            Document(
-                                page_content=link_content, metadata={"source": new_link}
-                            )
+                            Document(page_content=link_content, metadata={"source": new_link})
                         ]
 
                         collection_name = f"chat_{chat_id}"
@@ -381,9 +379,7 @@ def chat_page(chat_id):
                         del st.session_state["add_link_btn"]
                         st.rerun()
                     except Exception as e:
-                        st.toast(
-                            f"Failed to fetch content from the link: {e}", icon="⚠️"
-                        )
+                        st.toast(f"Failed to fetch content from the link: {e}", icon="⚠️")
             else:
                 st.toast("Please enter a link", icon="❗")
 

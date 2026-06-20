@@ -1,4 +1,21 @@
-repos: 
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.2
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/pypa/pip-audit
+    rev: v2.9.0
+    hooks:
+      - id: pip-audit
+        args:
+          - -r
+          - requirements.txt
+          - --ignore-vuln
+          - CVE-2026-45829
+          - --ignore-vuln
+          - CVE-2025-69872
+
   - repo: local
     hooks:
       - id: ruff
