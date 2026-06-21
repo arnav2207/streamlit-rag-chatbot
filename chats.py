@@ -346,7 +346,7 @@ def chat_page(chat_id):
                                 "Chrome/86.0.4240.111 Safari/537.36"
                             )
                         }
-                        response = requests.get(new_link, headers=headers)
+                        response = requests.get(new_link, headers=headers, timeout=10)
                         soup = BeautifulSoup(response.text, "html.parser")
 
                         # Check if the content was successfully retrieved

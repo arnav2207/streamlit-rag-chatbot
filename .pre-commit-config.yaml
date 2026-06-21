@@ -3,6 +3,13 @@ repos:
     rev: v8.24.2
     hooks:
       - id: gitleaks
+  
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-yaml
+
 
   - repo: https://github.com/pypa/pip-audit
     rev: v2.9.0
@@ -47,6 +54,20 @@ repos:
       - id: pyrefly
         name: pyrefly checks
         entry: pyrefly check
+        stages: [pre-commit]
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: vulture
+        name: vulture checks
+        entry: vulture . --min-confidence 80
+        stages: [pre-commit]
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: bandit
+        name: bandit checks
+        entry: bandit -r . --skip B101
         stages: [pre-commit]
         language: system
         types: [python]

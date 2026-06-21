@@ -6,6 +6,8 @@ stages:
   - type_check
   - test
   - coverage
+  - dead-code
+  - security
 
 variables:
   DOC_SAGE_DB_PATH: /tmp/doc_sage_test.sqlite
@@ -38,3 +40,13 @@ coverage:
   stage: coverage
   script:
     - pytest --cov=. --cov-report=term-missing
+
+vulture:
+  stage: dead-code
+  script:
+    - vulture . --min-confidence 80
+
+bandit:
+  stage: security
+  script:
+    - bandit -r . --skip B101
