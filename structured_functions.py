@@ -3,10 +3,6 @@ import shutil
 
 import environ
 import streamlit as st
-from structured_qa.config import ANSWER_PROMPT, FIND_PROMPT
-from structured_qa.model_loaders import load_llama_cpp_model
-from structured_qa.preprocessing import document_to_sections_dir
-from structured_qa.workflow import find_retrieve_answer
 
 env = environ.Env()
 environ.Env.read_env()
@@ -78,6 +74,8 @@ def process_pdf_to_sections(file_path: str, chat_id, doc_name: str) -> list[str]
 
     pdf_for_extraction, ocr_temp_path = prepare_pdf_with_ocr(file_path)
     try:
+        from structured_qa.preprocessing import document_to_sections_dir
+
         return document_to_sections_dir(pdf_for_extraction, sections_dir)
     finally:
         if ocr_temp_path and os.path.exists(ocr_temp_path):
@@ -118,6 +116,8 @@ def load_llama_model(model_path: str):
 
     parts = model_path.split("/")
     if len(parts) == 3 and not model_path.startswith("/"):
+        from structured_qa.model_loaders import load_llama_cpp_model
+
         return load_llama_cpp_model(model_path)
 
     raise FileNotFoundError(
@@ -159,6 +159,9 @@ def is_llama_model_loaded() -> bool:
 
 
 def answer_from_pdf_sections(question: str, sections_dirs: list[str]) -> str | None:
+    from structured_qa.config import ANSWER_PROMPT, FIND_PROMPT
+    from structured_qa.workflow import find_retrieve_answer
+
     model = get_llama_model()
     if model is None:
         return None
