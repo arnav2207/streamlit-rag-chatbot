@@ -21,15 +21,20 @@ env = environ.Env()
 # reading .env file
 environ.Env.read_env()
 
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
-    google_api_key=env("GOOGLE_API_KEY"),
-)
 
-embeddings = GoogleGenerativeAIEmbeddings(
-    model="models/gemini-embedding-001",
-    google_api_key=env("GOOGLE_API_KEY"),  # type: ignore[call-arg]
-)
+def get_llm() -> ChatGoogleGenerativeAI:
+    return ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash",
+        google_api_key=env("GOOGLE_API_KEY"),  # type: ignore[call-arg]
+    )
+
+
+def get_embeddings() -> GoogleGenerativeAIEmbeddings:
+    return GoogleGenerativeAIEmbeddings(
+        model="models/gemini-embedding-001",
+        google_api_key=env("GOOGLE_API_KEY"),  # type: ignore[call-arg]
+    )
+
 
 text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
 
@@ -91,7 +96,7 @@ def create_collection(collection_name, documents):
     try:
         vectordb = Chroma.from_documents(
             documents=texts,
-            embedding=embeddings,
+            embedding=get_embeddings(),
             persist_directory=persist_directory,
             collection_name=collection_name,
         )
@@ -118,7 +123,7 @@ def load_collection(collection_name):
     # Load the Chroma collection from the specified directory
     vectordb = Chroma(
         persist_directory=persist_directory,
-        embedding_function=embeddings,
+        embedding_function=get_embeddings(),
         collection_name=collection_name,
     )
 
@@ -200,7 +205,7 @@ def generate_answer_from_context(retriever, question: str):
     # Create a RAG (Retrieval-Augmented Generation) chain
     # This chain retrieves context, passes through the question,
     # formats the prompt, and generates an answer using the language model
-    rag_chain = {"context": retriever, "question": RunnablePassthrough()} | prompt | llm
+    rag_chain = {"context": retriever, "question": RunnablePassthrough()} | prompt | get_llm()
 
     # Invoke the RAG chain with the question and return the generated content
     return rag_chain.invoke(question).content
