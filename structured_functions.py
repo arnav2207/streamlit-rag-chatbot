@@ -2,9 +2,7 @@ import os
 import shutil
 
 import environ
-import ocrmypdf
 import streamlit as st
-from ocrmypdf.exceptions import MissingDependencyError
 from structured_qa.config import ANSWER_PROMPT, FIND_PROMPT
 from structured_qa.model_loaders import load_llama_cpp_model
 from structured_qa.preprocessing import document_to_sections_dir
@@ -49,6 +47,9 @@ def prepare_pdf_with_ocr(file_path: str) -> tuple[str, str | None]:
     """
     if not pdf_needs_ocr(file_path):
         return file_path, None
+
+    import ocrmypdf
+    from ocrmypdf.exceptions import MissingDependencyError
 
     os.makedirs(TEMP_DIR, exist_ok=True)
     basename = os.path.basename(file_path)

@@ -7,3 +7,4 @@ persist/
 temp_files/
 sections/
 debug.md
+.coverage
